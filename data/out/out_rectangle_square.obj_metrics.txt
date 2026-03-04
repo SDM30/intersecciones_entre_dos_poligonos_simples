@@ -1,0 +1,4 @@
+area_a 36
+area_b 100
+area_intersection 12
+percentage 8.10811
