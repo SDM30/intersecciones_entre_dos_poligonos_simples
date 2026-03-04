@@ -264,6 +264,7 @@ int main(int argc, char** argv) {
     }
 
     std::string metrics_fname = std::string(argv[3]) + "_metrics.txt";
+    std::cout << "Metrics saved in " << metrics_fname << std::endl;
     pujCGAL::IO::save_metrics(
       metrics_fname,
       static_cast<long double>(area_a),
