@@ -205,20 +205,12 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
     p_curr = p_start;
     auto next_pair = get_next_point(p_curr, poly_b);
-    if (!next_pair.first) return intersection;
     TPoint p_next = next_pair.second;
 
     while (p_next != p_start)
     {
         next_pair = get_next_point(p_curr, poly_b);
-        if (!next_pair.first) break;
-
         p_next = next_pair.second;
-        
-        //Full lap with no second intersection
-        if (p_next == p_start) {
-          break;
-        }
 
         if (in_polygon(p_next, poly_a).first) {
             if (!already_inserted(intersection, p_next)) {
