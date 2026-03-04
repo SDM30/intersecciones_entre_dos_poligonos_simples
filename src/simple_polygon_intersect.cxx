@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <iostream>
 #include <vector>
 
 #include <CGAL/Cartesian.h>
@@ -9,7 +11,6 @@
 using TReal = long double;
 using TKernel = CGAL::Cartesian< TReal >;
 using TPolygon = CGAL::Polygon_2<TKernel>;
-using TReal = TKernel::RT;
 using TPoint = TKernel::Point_2;
 using TSegment = TKernel::Segment_2;
 using TSegments = std::vector< TSegment >;
@@ -31,14 +32,20 @@ std::pair< bool, TPoint > intersect( const TSegment& a, const TSegment& b ) {
     return( std::make_pair( false, TPoint( ) ) );
 }
 
-TPolygon polygon_from_segments(TSegments& segments) {
+TPolygon polygon_from_segments(const TSegments& segments) {
 
     TPolygon poly;
+    if (segments.empty()) {
+        return poly;
+    }
 
     poly.push_back(segments[0].source());
 
-    for (const TSegment seg : segments) {
-        poly.push_back(seg.target());
+    for (const auto& seg : segments) {
+        // Avoid duplicating the first vertex in closed polylines.
+        if (seg.target() != poly[0]) {
+            poly.push_back(seg.target());
+        }
     }
 
     return poly;
@@ -50,40 +57,35 @@ Check if the source or targert is inside the polygon
 std::pair<bool, TPoint> in_polygon(const TSegment& segment, const TPolygon& poly) {
     TPoint p_src = segment.source();
     TPoint p_trgt = segment.target();
-    int c_src_left = 0, c_trgt_left = 0;
-    TPoint p_insd;
+    bool src_inside = true;
+    bool trgt_inside = true;
 
     for (const auto& seg : poly.edges()) {
         CGAL::Orientation side_src = CGAL::orientation(seg.source(), seg.target(), p_src);
         CGAL::Orientation side_trgt = CGAL::orientation(seg.source(), seg.target(), p_trgt);
-        if (side_src == CGAL::LEFT_TURN)
-            ++c_src_left;
-        
-        if (side_trgt == CGAL::LEFT_TURN)
-            ++c_trgt_left;
+
+        // LEFT_TURN or COLLINEAR are accepted as inside/on-boundary.
+        if (side_src == CGAL::RIGHT_TURN) src_inside = false;
+        if (side_trgt == CGAL::RIGHT_TURN) trgt_inside = false;
     }
 
-    if(c_src_left == poly.edges().size()) {
+    if (src_inside) {
         return {true, p_src};
-    } else if (c_trgt_left == poly.edges().size()){
+    }
+    if (trgt_inside) {
         return {true, p_trgt};
     }
-
     return {false, TPoint()};
 }
 
 std::pair<bool, TPoint> in_polygon(const TPoint& p, const TPolygon& poly) {
-    TPoint p_insd;
-
     for (const auto& seg : poly.edges()) {
         CGAL::Orientation side_src = CGAL::orientation(seg.source(), seg.target(), p);
-        if (side_src != CGAL::LEFT_TURN)
-            return {false, p_insd};
+        if (side_src == CGAL::RIGHT_TURN)
+            return {false, TPoint()};
     }
 
-    p_insd = p;
-
-    return {true, p_insd};
+    return {true, p};
 }
 
 bool is_unassigned(const TSegment& seg) {
@@ -126,7 +128,14 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
     }
 
     // Starting pos either the src or target of inter_a1
-    TPoint p_start = in_polygon(inter_a1, poly_b).second;
+    auto start_pair = in_polygon(inter_a1, poly_b);
+    if (!start_pair.first) {
+        return intersection;
+    }
+    TPoint p_start = start_pair.second;
+    if (intersection.empty() || p_start != intersection[0]) {
+        intersection.push_back(p_start);
+    }
     TPoint p_curr = p_start;
     bool first_step = true;
     while (is_unassigned(inter_a2) && is_unassigned(inter_b2))
