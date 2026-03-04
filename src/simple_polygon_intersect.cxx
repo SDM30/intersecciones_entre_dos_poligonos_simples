@@ -116,6 +116,8 @@ void sort_points_around_centroid(TPoints& points) {
     std::sort(
       points.begin(), points.end(),
       [cx, cy](const TPoint& a, const TPoint& b) {
+          // atan2 gives each point a polar angle around the centroid; sorting
+          // angles in ascending order traverses vertices counterclockwise.
           const long double angle_a =
             std::atan2(static_cast<long double>(a.y()) - cy, static_cast<long double>(a.x()) - cx);
           const long double angle_b =
