@@ -53,7 +53,7 @@ TPolygon polygon_from_segments(const TSegments& segments) {
 }
 
 /*
-Check if the source or targert is inside the polygon
+Check if the source or target is inside the polygon
 */ 
 std::pair<bool, TPoint> in_polygon(const TSegment& segment, const TPolygon& poly) {
     TPoint p_src = segment.source();
@@ -103,6 +103,7 @@ void sort_points_around_centroid(TPoints& points) {
     }
 
     // Compute centroid as the average of all vertices.
+    TPoint pivot;
     long double cx = 0.0L;
     long double cy = 0.0L;
     for (const auto& p : points) {
@@ -112,16 +113,17 @@ void sort_points_around_centroid(TPoints& points) {
     cx /= static_cast<long double>(points.size());
     cy /= static_cast<long double>(points.size());
 
+    pivot = {cx, cy};
     // Sort points by polar angle around the centroid.
     std::sort(
       points.begin(), points.end(),
-      [cx, cy](const TPoint& a, const TPoint& b) {
+      [pivot](const TPoint& a, const TPoint& b) {
           // atan2 gives each point a polar angle around the centroid; sorting
           // angles in ascending order traverses vertices counterclockwise.
           const long double angle_a =
-            std::atan2(static_cast<long double>(a.y()) - cy, static_cast<long double>(a.x()) - cx);
+            std::atan2(static_cast<long double>(a.y()) - pivot.y(), static_cast<long double>(a.x()) - pivot.x());
           const long double angle_b =
-            std::atan2(static_cast<long double>(b.y()) - cy, static_cast<long double>(b.x()) - cx);
+            std::atan2(static_cast<long double>(b.y()) - pivot.y(), static_cast<long double>(b.x()) - pivot.x());
           return angle_a < angle_b;
       }
     );
