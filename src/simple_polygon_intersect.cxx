@@ -184,13 +184,13 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
     p_curr = p_start;
     first_step = true;
-    auto next_pair = get_next_point(p_curr, poly_a);
+    auto next_pair = get_next_point(p_curr, poly_b);
     if (!next_pair.first) return intersection;
     TPoint p_next = next_pair.second;
 
     while (p_next != p_start)
     {
-        next_pair = get_next_point(p_curr, poly_a);
+        next_pair = get_next_point(p_curr, poly_b);
         if (!next_pair.first) break;
 
         p_next = next_pair.second;
@@ -202,7 +202,17 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
         if (in_polygon(p_next, poly_a).first) {
             intersection.push_back(p_next);
-        } 
+        } else {
+            TSegment seg_b(p_curr, p_next);
+
+            for(const auto& seg_a : poly_a.edges()) {
+                auto inter = intersect(seg_b, seg_a);
+                if (inter.first && inter.second != intersection[0]) {
+                    intersection.push_back(inter.second);
+                    break;
+                }
+            }
+        }
 
         p_curr = p_next;
     }
