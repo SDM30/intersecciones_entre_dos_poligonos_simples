@@ -70,6 +70,29 @@ save( const std::string& fname, TPointsIt pB, TPointsIt pE )
     return( false );
 }
 
+// -------------------------------------------------------------------------
+bool pujCGAL::IO::
+save_metrics(
+  const std::string& fname,
+  long double area_a,
+  long double area_b,
+  long double area_intersection,
+  long double percentage
+  )
+{
+  std::ofstream ofs( fname.c_str( ) );
+  if( ofs )
+  {
+    ofs << "area_a " << area_a << std::endl;
+    ofs << "area_b " << area_b << std::endl;
+    ofs << "area_intersection " << area_intersection << std::endl;
+    ofs << "percentage " << percentage << std::endl;
+    return( true );
+  }
+  else
+    return( false );
+}
+
 #endif // __pujCGAL__IO__hxx__
 
 // eof - IO.hxx

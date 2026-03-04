@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -92,6 +93,38 @@ bool is_unassigned(const TSegment& seg) {
     return seg.source() == seg.target();
 }
 
+bool already_inserted(const TPoints& points, const TPoint& point) {
+    return std::find(points.begin(), points.end(), point) != points.end();
+}
+
+void sort_points_around_centroid(TPoints& points) {
+    if (points.size() < 3) {
+        return;
+    }
+
+    // Compute centroid as the average of all vertices.
+    long double cx = 0.0L;
+    long double cy = 0.0L;
+    for (const auto& p : points) {
+        cx += static_cast<long double>(p.x());
+        cy += static_cast<long double>(p.y());
+    }
+    cx /= static_cast<long double>(points.size());
+    cy /= static_cast<long double>(points.size());
+
+    // Sort points by polar angle around the centroid.
+    std::sort(
+      points.begin(), points.end(),
+      [cx, cy](const TPoint& a, const TPoint& b) {
+          const long double angle_a =
+            std::atan2(static_cast<long double>(a.y()) - cy, static_cast<long double>(a.x()) - cx);
+          const long double angle_b =
+            std::atan2(static_cast<long double>(b.y()) - cy, static_cast<long double>(b.x()) - cx);
+          return angle_a < angle_b;
+      }
+    );
+}
+
 // TODO: implement nextPoint
 std::pair<bool, TPoint> get_next_point(const TPoint& src, const TPolygon& poly) {
     auto it = std::find_if(poly.edges_begin(), poly.edges_end(),
@@ -111,7 +144,9 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         for(const TSegment& seg_b: poly_b.edges()){
             inter = intersect(seg_a,seg_b);
             if(inter.first) {
-                intersection.push_back(inter.second);
+                if (!already_inserted(intersection, inter.second)) {
+                    intersection.push_back(inter.second);
+                }
                 inter_a1 = seg_a;
                 inter_b1 = seg_b;
             }
@@ -126,10 +161,11 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
     // Starting pos either the src or target of inter_a1
     auto start_pair = in_polygon(inter_a1, poly_b);
     if (!start_pair.first) {
+        // Both endpoints are outside of pol b
         return intersection;
     }
     TPoint p_start = start_pair.second;
-    if (intersection.empty() || p_start != intersection[0]) {
+    if (!already_inserted(intersection, p_start)) {
         intersection.push_back(p_start);
     }
     TPoint p_curr = p_start;
@@ -148,7 +184,9 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         first_step = false;
 
         if (in_polygon(p_next, poly_b).first) {
-            intersection.push_back(p_next);
+            if (!already_inserted(intersection, p_next)) {
+                intersection.push_back(p_next);
+            }
         }
 
         p_curr = p_next;
@@ -160,7 +198,7 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         return intersection;
     }
     p_start = start_pair.second;
-    if (intersection.empty() || p_start != intersection[0]) {
+    if (!already_inserted(intersection, p_start)) {
         intersection.push_back(p_start);
     }
 
@@ -183,7 +221,9 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         first_step = false;
 
         if (in_polygon(p_next, poly_a).first) {
-            intersection.push_back(p_next);
+            if (!already_inserted(intersection, p_next)) {
+                intersection.push_back(p_next);
+            }
         }
 
         p_curr = p_next;
@@ -207,9 +247,38 @@ int main(int argc, char** argv) {
     TPolygon poly_b = polygon_from_segments(segments_b);
 
     TPoints intersection = get_intersection(poly_a, poly_b);
-    for (const auto& p: intersection) {
-        std::cout << p << std::endl;
+    sort_points_around_centroid(intersection);
+
+    if (intersection.size() >= 1) {
+        std::cout << "Points saved in " << argv[3] << std::endl;
+        pujCGAL::IO::save(argv[3], intersection.begin(), intersection.end());
     }
+
+    TKernel::FT area_inter = 0;
+    if (intersection.size() >= 3) {
+        TPolygon inter_polygon;
+        for (const auto & p : intersection) {
+            inter_polygon.push_back(p);
+        }
+
+        area_inter = CGAL::abs(inter_polygon.area());
+    }
+
+    TKernel::FT area_a = CGAL::abs(poly_a.area());
+    TKernel::FT area_b = CGAL::abs(poly_b.area());
+    TKernel::FT porcentaje = 0;
+    if ((area_inter + area_a + area_b) != 0) {
+        porcentaje = CGAL::abs(area_inter * 100 / (area_inter + area_a + area_b));
+    }
+
+    std::string metrics_fname = std::string(argv[3]) + "_metrics.txt";
+    pujCGAL::IO::save_metrics(
+      metrics_fname,
+      static_cast<long double>(area_a),
+      static_cast<long double>(area_b),
+      static_cast<long double>(area_inter),
+      static_cast<long double>(porcentaje)
+    );
 
     return 0;
 }
