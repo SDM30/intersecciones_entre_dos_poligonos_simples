@@ -114,12 +114,8 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
                 intersection.push_back(inter.second);
                 inter_a1 = seg_a;
                 inter_b1 = seg_b;
-                break;
             }
-        }
-        if (inter.first) {
-            break;
-        }        
+        }       
     }
 
     if (is_unassigned(inter_a1) && is_unassigned(inter_b1)) {
@@ -153,20 +149,6 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
         if (in_polygon(p_next, poly_b).first) {
             intersection.push_back(p_next);
-        } else {
-            TSegment seg_a(p_curr, p_next);
-            bool found = false;
-
-            for(const auto& seg_b : poly_b.edges()) {
-                auto inter = intersect(seg_a, seg_b);
-                if (inter.first && inter.second != intersection[0]) {
-                    intersection.push_back(inter.second);
-                    inter_a2 = seg_a;
-                    inter_b2 = seg_b;
-                    found = true;
-                    break;
-                }
-            }
         }
 
         p_curr = p_next;
@@ -202,16 +184,6 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
         if (in_polygon(p_next, poly_a).first) {
             intersection.push_back(p_next);
-        } else {
-            TSegment seg_b(p_curr, p_next);
-
-            for(const auto& seg_a : poly_a.edges()) {
-                auto inter = intersect(seg_b, seg_a);
-                if (inter.first && inter.second != intersection[0]) {
-                    intersection.push_back(inter.second);
-                    break;
-                }
-            }
         }
 
         p_curr = p_next;
