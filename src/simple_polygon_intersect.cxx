@@ -173,19 +173,16 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         intersection.push_back(p_start);
     }
     TPoint p_curr = p_start;
-    bool first_step = true;
     while (is_unassigned(inter_a2) && is_unassigned(inter_b2))
     {
         auto next_pair = get_next_point(p_curr, poly_a);
-        if (!next_pair.first) break;
 
         TPoint p_next = next_pair.second;
 
         //Full lap with no second intersection
-        if (!first_step && p_next == p_start) {
+        if (p_next == p_start) {
             break;
         }
-        first_step = false;
 
         if (in_polygon(p_next, poly_b).first) {
             if (!already_inserted(intersection, p_next)) {
@@ -207,7 +204,6 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
     }
 
     p_curr = p_start;
-    first_step = true;
     auto next_pair = get_next_point(p_curr, poly_b);
     if (!next_pair.first) return intersection;
     TPoint p_next = next_pair.second;
@@ -218,11 +214,11 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
         if (!next_pair.first) break;
 
         p_next = next_pair.second;
+        
         //Full lap with no second intersection
-        if (!first_step && p_next == p_start) {
+        if (p_next == p_start) {
           break;
         }
-        first_step = false;
 
         if (in_polygon(p_next, poly_a).first) {
             if (!already_inserted(intersection, p_next)) {
