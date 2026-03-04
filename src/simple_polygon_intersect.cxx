@@ -171,8 +171,43 @@ TPoints get_intersection(const TPolygon& poly_a, const TPolygon& poly_b) {
 
         p_curr = p_next;
     }
+
+    // Starting pos either the src or target of inter_b1
+    start_pair = in_polygon(inter_b1, poly_a);
+    if (!start_pair.first) {
+        return intersection;
+    }
+    p_start = start_pair.second;
+    if (intersection.empty() || p_start != intersection[0]) {
+        intersection.push_back(p_start);
+    }
+
+    p_curr = p_start;
+    first_step = true;
+    auto next_pair = get_next_point(p_curr, poly_a);
+    if (!next_pair.first) return intersection;
+    TPoint p_next = next_pair.second;
+
+    while (p_next != p_start)
+    {
+        next_pair = get_next_point(p_curr, poly_a);
+        if (!next_pair.first) break;
+
+        p_next = next_pair.second;
+        //Full lap with no second intersection
+        if (!first_step && p_next == p_start) {
+          break;
+        }
+        first_step = false;
+
+        if (in_polygon(p_next, poly_a).first) {
+            intersection.push_back(p_next);
+        } 
+
+        p_curr = p_next;
+    }
     
-    return intersection;
+   return intersection;
 }
 
 int main(int argc, char** argv) {
