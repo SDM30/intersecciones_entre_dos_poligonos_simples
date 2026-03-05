@@ -6,6 +6,7 @@
 #include <CGAL/Cartesian.h>
 #include <CGAL/intersections.h>
 #include <CGAL/Polygon_2.h>
+#include <CGAL/convex_hull_2.h>
 
 #include <pujCGAL/IO.h>
 
@@ -97,36 +98,19 @@ bool already_inserted(const TPoints& points, const TPoint& point) {
     return std::find(points.begin(), points.end(), point) != points.end();
 }
 
-void sort_points_around_centroid(TPoints& points) {
+TPolygon form_poly_intersection(TPoints& points) {
     if (points.size() < 3) {
-        return;
+        return TPolygon();
+    }
+    TPoints hull;
+    TPolygon poly;
+    CGAL::convex_hull_2(points.begin(), points.end(), std::back_inserter(hull));
+
+    for (const auto& p : hull) {
+        poly.push_back(p);
     }
 
-    // Compute centroid as the average of all vertices.
-    TPoint pivot;
-    long double cx = 0.0L;
-    long double cy = 0.0L;
-    for (const auto& p : points) {
-        cx += static_cast<long double>(p.x());
-        cy += static_cast<long double>(p.y());
-    }
-    cx /= static_cast<long double>(points.size());
-    cy /= static_cast<long double>(points.size());
-
-    pivot = {cx, cy};
-    // Sort points by polar angle around the centroid.
-    std::sort(
-      points.begin(), points.end(),
-      [pivot](const TPoint& a, const TPoint& b) {
-          // atan2 gives each point a polar angle around the centroid; sorting
-          // angles in ascending order traverses vertices counterclockwise.
-          const long double angle_a =
-            std::atan2(static_cast<long double>(a.y()) - pivot.y(), static_cast<long double>(a.x()) - pivot.x());
-          const long double angle_b =
-            std::atan2(static_cast<long double>(b.y()) - pivot.y(), static_cast<long double>(b.x()) - pivot.x());
-          return angle_a < angle_b;
-      }
-    );
+    return poly;
 }
 
 // TODO: implement nextPoint
@@ -239,21 +223,20 @@ int main(int argc, char** argv) {
     TPolygon poly_b = polygon_from_segments(segments_b);
 
     TPoints intersection = get_intersection(poly_a, poly_b);
-    sort_points_around_centroid(intersection);
+    TPolygon poly_inter = form_poly_intersection(intersection);
 
     if (intersection.size() >= 1) {
         std::cout << "Points saved in " << argv[3] << std::endl;
-        pujCGAL::IO::save(argv[3], intersection.begin(), intersection.end());
+        if (intersection.size() >= 3) {
+            pujCGAL::IO::save(argv[3], poly_inter.vertices_begin(), poly_inter.vertices_end());
+        } else {
+            pujCGAL::IO::save(argv[3], intersection.begin(), intersection.end());
+        }
     }
 
     TKernel::FT area_inter = 0;
     if (intersection.size() >= 3) {
-        TPolygon inter_polygon;
-        for (const auto & p : intersection) {
-            inter_polygon.push_back(p);
-        }
-
-        area_inter = CGAL::abs(inter_polygon.area());
+        area_inter = CGAL::abs(poly_inter.area());
     }
 
     TKernel::FT area_a = CGAL::abs(poly_a.area());

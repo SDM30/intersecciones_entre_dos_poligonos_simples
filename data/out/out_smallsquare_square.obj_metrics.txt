@@ -1,4 +1,0 @@
-area_a 1
-area_b 100
-area_intersection 0
-percentage 0

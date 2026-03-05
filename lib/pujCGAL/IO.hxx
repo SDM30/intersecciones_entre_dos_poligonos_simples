@@ -62,8 +62,30 @@ save( const std::string& fname, TPointsIt pB, TPointsIt pE )
   std::ofstream ofs( fname.c_str( ) );
   if( ofs )
   {
-    for( auto pIt = pB; pIt != pE; ++pIt )
-      ofs << "v " << pIt->x( ) << " " << pIt->y( ) << " 0" << std::endl;
+    std::vector< typename std::iterator_traits< TPointsIt >::value_type > points;
+    points.insert( points.end( ), pB, pE );
+
+    for( const auto& p: points )
+      ofs << "v " << p.x( ) << " " << p.y( ) << " 0" << std::endl;
+
+    if( points.size( ) == 1 )
+    {
+      ofs << std::endl;
+      ofs << "p 1" << std::endl;
+    }
+    else if( points.size( ) == 2 )
+    {
+      ofs << std::endl;
+      ofs << "l 1 2" << std::endl;
+    }
+    else if( points.size( ) >= 3 )
+    {
+      ofs << std::endl;
+      for( std::size_t i = 0; i + 1 < points.size( ); ++i )
+        ofs << "l " << i + 1 << " " << i + 2 << std::endl;
+      ofs << "l " << points.size( ) << " 1" << std::endl;
+    }
+
     return( true );
   }
   else
